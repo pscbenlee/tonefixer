@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PSC - Reply Bot</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            width: 100%;
+            max-width: 700px;
+            background: #1a1a1a;
+            border-radius: 16px;
+            padding: 32px;
+            border: 1px solid #2a2a2a;
+        }
+        h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .subtitle { color: #888; margin-bottom: 24px; font-size: 14px; }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #ccc;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        textarea {
+            width: 100%;
+            background: #0f0f0f;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 12px;
+            color: #fff;
+            font-size: 15px;
+            resize: vertical;
+            margin-bottom: 16px;
+            font-family: inherit;
+        }
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .tone-select {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .tone-btn {
+            flex: 1;
+            min-width: 100px;
+            padding: 10px;
+            background: #0f0f0f;
+            border: 1px solid #333;
+            border-radius: 8px;
+            color: #888;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .tone-btn:hover { border-color: #555; }
+        .tone-btn.active {
+            background: #667eea;
+            border-color: #667eea;
+            color: #fff;
+        }
+        .generate-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .generate-btn:hover { opacity: 0.9; }
+        .generate-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 24px;
+            padding: 16px;
+            background: #0f0f0f;
+            border: 1px solid #333;
+            border-radius: 8px;
+            display: none;
+        }
+        .result.show { display: block; }
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .result-label { color: #888; font-size: 14px; }
+        .copy-btn {
+            padding: 6px 12px;
+            background: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 6px;
+            color: #ccc;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        .copy-btn:hover { background: #333; }
+        .result-text {
+            color: #fff;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+        .loading {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid #fff;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 0.6s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>PSC Reply Bot</h1>
+        <p class="subtitle">Dùng AI để rep comment chất như nước cất</p>
+        
+        <label>Bình luận cần rep:</label>
+        <textarea id="comment" rows="3" placeholder="Paste comment của khách vô đây..."></textarea>
+        
+        <label>Chọn tone:</label>
+        <div class="tone-select">
+            <button class="tone-btn active" data-tone="thân thiện">Thân thiện</button>
+            <button class="tone-btn" data-tone="hài hước">Hài hước</button>
+            <button class="tone-btn" data-tone="chuyên nghiệp">Chuyên nghiệp</button>
+            <button class="tone-btn" data-tone="cà khịa">Cà khịa</button>
+        </div>
+        
+        <button class="generate-btn" id="generateBtn">Tạo câu trả lời</button>
+        
+        <div class="result" id="result">
+            <div class="result-header">
+                <span class="result-label">Câu trả lời:</span>
+                <button class="copy-btn" onclick="copyResult()">Copy</button>
+            </div>
+            <div class="result-text" id="resultText"></div>
+        </div>
+    </div>
+
+    <script>
+        let selectedTone = 'thân thiện';
+        
+        document.querySelectorAll('.tone-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.tone-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                selectedTone = this.dataset.tone;
+            });
+        });
+        
+        document.getElementById('generateBtn').addEventListener('click', async function() {
+            const comment = document.getElementById('comment').value.trim();
+            const btn = this;
+            const result = document.getElementById('result');
+            const resultText = document.getElementById('resultText');
+            
+            if (!comment) {
+                alert('Điền comment vô đã thằng lồn');
+                return;
+            }
+            
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loading"></span> Đang tạo...';
+            result.classList.remove('show');
+            
+            try {
+                const response = await fetch('/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ comment, tone: selectedTone })
+                });
+                
+                const data = await response.json();
+                
+                if (data.reply) {
+                    resultText.textContent = data.reply;
+                    result.classList.add('show');
+                } else {
+                    alert('Lỗi: ' + (data.error || 'Không tạo được'));
+                }
+            } catch (err) {
+                alert('Lỗi kết nối server: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = 'Tạo câu trả lời';
+            }
+        });
+        
+        function copyResult() {
+            const text = document.getElementById('resultText').textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = event.target;
+                btn.textContent = 'Đã copy!';
+                setTimeout(() => btn.textContent = 'Copy', 2000);
+            });
+        }
+    </script>
+</body>
+</html>
