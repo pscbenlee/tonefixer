@@ -1,50 +1,38 @@
 export default async function handler(req, res) {
-  if (req.method!== 'POST') {
-    return res.status(405).json({ error: 'Chỉ nhận POST' });
-  }
-
-  let body;
-  try {
-    body = typeof req.body === 'string'? JSON.parse(req.body) : req.body;
-  } catch {
-    return res.status(400).json({ error: 'Body JSON sai' });
-  }
-
-  const { text, tone } = body;
-  const key = process.env.OPENAI_API_KEY;
-
-  if (!key) return res.status(500).json({ error: 'Thiếu OPENAI_API_KEY' });
-  if (!text) return res.status(400).json({ error: 'Thiếu text' });
+  if (req.method!== 'POST') return res.status(405).end();
 
   try {
+    const { text, tone } = req.body;
+    const key = process.env.OPENAI_API_KEY;
+
+    if (!key) return res.status(500).json({ error: 'Thiếu OPENAI_API_KEY trên Vercel' });
+    if (!text) return res.status(400).json({ error: 'Thiếu text' });
+
     const r = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${key}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${key}`
       },
       body: JSON.stringify({
-        model: 'gpt-3.5-turbo',
-        messages: [{
-          role: 'user',
-          content: `Biến câu sau thành 3 phiên bản tone ${tone}, mỗi câu 1 dòng: "${text}"`
-        }]
+        model: 'gpt-4o-mini',
+        messages: [
+          {role: 'system', content: `Bạn là trợ lý đổi tone. Viết lại câu theo tone: ${tone}. Trả về đúng 3 phiên bản, mỗi dòng 1 phiên bản, không đánh số.`},
+          {role: 'user', content: text}
+        ],
+        temperature: 0.8
       })
     });
 
-    if (!r.ok) {
-      const err = await r.json();
-      return res.status(500).json({ error: err.error?.message || 'OpenAI lỗi' });
-    }
-
     const data = await r.json();
-    const out = data.choices[0].message.content
-   .split('\n')
-   .filter(x => x.trim())
-   .slice(0, 3);
+    if (!r.ok) return res.status(r.status).json({ error: data.error?.message || 'OpenAI lỗi' });
 
-    res.status(200).json({ results: out });
-  } catch(e) {
-    res.status(500).json({ error: 'Server crash: ' + e.message });
+    const content = data.choices[0].message.content;
+    const versions = content.split('\n').filter(x => x.trim()).slice(0, 3);
+
+    return res.status(200).json({ versions });
+
+  } catch (e) {
+    return res.status(500).json({ error: 'Lỗi server: ' + e.message });
   }
 }
