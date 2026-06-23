@@ -1,59 +1,56 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8">
-  <title>Tone Fixer</title>
-  <style>
-    body {font-family: Arial; padding: 30px; max-width: 600px; margin: auto;}
-    input, select, button {width: 100%; padding: 10px; margin: 8px 0; font-size: 16px;}
-    button {background: #4CAF50; color: white; border: none; cursor: pointer;}
-    button:hover {background: #45a049;}
-    #out {margin-top: 20px; white-space: pre-line; background: #f5f5f5; padding: 15px;}
-  </style>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>ToneFixer - Đổi tone câu chữ</title>
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto;max-width:680px;margin:60px auto;padding:20px;background:#f7f8fc;color:#222}
+h1{font-size:28px;margin-bottom:8px}
+p.sub{color:#666;margin-bottom:28px}
+.card{background:white;border-radius:14px;padding:24px;box-shadow:0 4px 20px rgba(0,0,0,.06)}
+label{font-weight:600;font-size:14px;margin-bottom:6px;display:block}
+input,select,button{width:100%;padding:12px 14px;border:1px solid #ddd;border-radius:10px;font-size:16px;margin-bottom:14px}
+button{background:#4f46e5;color:white;border:0;font-weight:600;cursor:pointer}
+button:hover{background:#4338ca}
+#out{margin-top:20px}
+.item{background:#f3f4f6;border-radius:10px;padding:14px;margin-bottom:10px}
+.item b{color:#4f46e5;font-size:13px}
+</style>
 </head>
 <body>
-  <h2>Tool Đổi Tone Câu</h2>
-  <input id="text" placeholder="Nhập câu cần đổi tone...">
-  <select id="tone">
-    <option value="lịch sự">Lịch sự</option>
-    <option value="thân thiện">Thân thiện</option>
-    <option value="hài hước">Hài hước</option>
-    <option value="trang trọng">Trang trọng</option>
-  </select>
-  <button onclick="fix()">Tạo 3 phiên bản</button>
-  <div id="out"></div>
+<h1>Tool Đổi Tone Câu</h1>
+<p class="sub">Nhập câu gốc → chọn tone → AI viết lại cho mượt</p>
 
-  <script>
-  async function fix() {
-    const text = document.getElementById('text').value;
-    const tone = document.getElementById('tone').value;
-    const out = document.getElementById('out');
-    
-    if (!text) {
-      out.innerText = 'Nhập câu trước đã ku ơi';
-      return;
-    }
-    
-    out.innerText = 'Đang xử lý...';
-    
-    try {
-      const res = await fetch('/api/fix.mjs', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({text, tone})
-      });
-      
-      const data = await res.json();
-      
-      if (data.error) {
-        out.innerText = 'Lỗi: ' + data.error;
-      } else {
-        out.innerText = data.results.join('\n\n');
-      }
-    } catch(e) {
-      out.innerText = 'Lỗi mạng: ' + e.message;
-    }
-  }
-  </script>
+<div class="card">
+<label>Câu gốc của bạn</label>
+<input id="text" placeholder="VD: thằng kia gửi báo cáo tao chưa đm"/>
+
+<label>Chọn tone</label>
+<select id="tone">
+<option>Lịch sự</option>
+<option>Thân thiện</option>
+<option>Chuyên nghiệp</option>
+<option>Ngắn gọn</option>
+</select>
+
+<button onclick="fix()">Tạo 3 phiên bản</button>
+<div id="out"></div>
+</div>
+
+<script>
+async function fix(){
+  const text=document.getElementById('text').value;
+  const tone=document.getElementById('tone').value;
+  const out=document.getElementById('out');
+  out.innerHTML='Đang viết lại...';
+  
+  const r=await fetch('/api/fix',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text,tone})});
+  const j=await r.json();
+  
+  if(j.error){out.innerHTML='<b style="color:red">'+j.error+'</b>';return}
+  out.innerHTML=j.versions.map((v,i)=>`<div class="item"><b>Phiên bản ${i+1}</b><br>${v}</div>`).join('');
+}
+</script>
 </body>
 </html>
