@@ -18,6 +18,7 @@ textarea:focus{outline:0;border-color:#818cf8}
 .tone-btn:hover:not(.active){border-color:#555}
 button{width:100%;padding:14px;background:linear-gradient(90deg,#6366f1,#8b5cf6);border:0;border-radius:10px;color:white;font-weight:600;font-size:16px;cursor:pointer}
 button:hover{opacity:.9}
+button:disabled{opacity:.5;cursor:not-allowed}
 #out{margin-top:20px}
 .item{background:#262626;border-radius:10px;padding:14px;margin-bottom:10px;border-left:3px solid #818cf8}
 </style>
@@ -28,7 +29,7 @@ button:hover{opacity:.9}
 <p class="sub">Dùng AI để rep comment chất như nước cất</p>
 
 <label>Bình luận cần rep:</label>
-<textarea id="text" placeholder="nộp báo cáo chưa thằng kia"></textarea>
+<textarea id="text" placeholder="Tai sao chua nop bao cao ha, biet tre deadline roi khong. Em lam viec nhu the ha"></textarea>
 
 <label>Chọn tone:</label>
 <div class="tone-wrap">
@@ -38,7 +39,7 @@ button:hover{opacity:.9}
 <button class="tone-btn" data-tone="Cà khịa">Cà khịa</button>
 </div>
 
-<button onclick="fix()">Tạo câu trả lời</button>
+<button id="btn" onclick="fix()">Tạo câu trả lời</button>
 <div id="out"></div>
 </div>
 
@@ -53,15 +54,29 @@ document.querySelectorAll('.tone-btn').forEach(btn=>{
 })
 
 async function fix(){
-  const text=document.getElementById('text').value;
+  const text=document.getElementById('text').value.trim();
   const out=document.getElementById('out');
+  const btn=document.getElementById('btn');
+  
+  if(!text){out.innerHTML='<b style="color:#ef4444">Nhập câu cần rep đã ku =))</b>';return}
+  
+  btn.disabled=true;
   out.innerHTML='Đang viết lại...';
   
-  const r=await fetch('/api/fix',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text,tone:currentTone})});
-  const j=await r.json();
-  
-  if(j.error){out.innerHTML='<b style="color:#ef4444">'+j.error+'</b>';return}
-  out.innerHTML=j.versions.map((v,i)=>`<div class="item"><b>Phiên bản ${i+1}</b><br>${v}</div>`).join('');
+  try{
+    const r=await fetch('/api/fix',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text,tone:currentTone})});
+    const j=await r.json();
+    
+    if(!r.ok || j.error){
+      out.innerHTML='<b style="color:#ef4444">Lỗi: '+(j.error||'API lỗi '+r.status)+'</b>';
+      return
+    }
+    out.innerHTML=j.versions.map((v,i)=>`<div class="item"><b>Phiên bản ${i+1}</b><br>${v}</div>`).join('');
+  }catch(e){
+    out.innerHTML='<b style="color:#ef4444">Lỗi kết nối: '+e.message+'</b><br><small>Check Vercel + OPENAI_API_KEY</small>';
+  }finally{
+    btn.disabled=false;
+  }
 }
 </script>
 </body>
