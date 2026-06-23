@@ -1,0 +1,8 @@
+{
+  "functions": {
+    "api/fix.js": {
+      "runtime": "nodejs18.x"
+    }
+  },
+  "version": 2
+}
