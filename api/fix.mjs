@@ -39,9 +39,9 @@ export default async function handler(req, res) {
 
     const data = await r.json();
     const out = data.choices[0].message.content
-     .split('\n')
-     .filter(x => x.trim())
-     .slice(0, 3);
+   .split('\n')
+   .filter(x => x.trim())
+   .slice(0, 3);
 
     res.status(200).json({ results: out });
   } catch(e) {
