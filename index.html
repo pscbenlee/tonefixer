@@ -3,52 +3,64 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>ToneFixer - Đổi tone câu chữ</title>
+<title>PSC Reply Bot</title>
 <style>
-body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto;max-width:680px;margin:60px auto;padding:20px;background:#f7f8fc;color:#222}
-h1{font-size:28px;margin-bottom:8px}
-p.sub{color:#666;margin-bottom:28px}
-.card{background:white;border-radius:14px;padding:24px;box-shadow:0 4px 20px rgba(0,0,0,.06)}
-label{font-weight:600;font-size:14px;margin-bottom:6px;display:block}
-input,select,button{width:100%;padding:12px 14px;border:1px solid #ddd;border-radius:10px;font-size:16px;margin-bottom:14px}
-button{background:#4f46e5;color:white;border:0;font-weight:600;cursor:pointer}
-button:hover{background:#4338ca}
+body{background:#0a0a0a;color:#e5e5e5;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;padding:20px}
+.card{background:#1a1a1a;border-radius:16px;padding:32px;max-width:520px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,.4)}
+h1{color:#818cf8;font-size:28px;margin:0 0 8px}
+.sub{color:#888;margin-bottom:28px;font-size:14px}
+label{font-weight:600;font-size:14px;margin-bottom:8px;display:block;color:#ccc}
+textarea{width:100%;background:#0f0f0f;border:1px solid #333;border-radius:10px;padding:12px;color:#e5e5e5;font-size:15px;resize:vertical;min-height:80px;box-sizing:border-box}
+textarea:focus{outline:0;border-color:#818cf8}
+.tone-wrap{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:16px}
+.tone-btn{padding:10px;background:#262626;border:1px solid #333;border-radius:8px;color:#aaa;cursor:pointer;font-size:14px;transition:.2s}
+.tone-btn.active{background:#4f46e5;border-color:#4f46e5;color:white}
+.tone-btn:hover:not(.active){border-color:#555}
+button{width:100%;padding:14px;background:linear-gradient(90deg,#6366f1,#8b5cf6);border:0;border-radius:10px;color:white;font-weight:600;font-size:16px;cursor:pointer}
+button:hover{opacity:.9}
 #out{margin-top:20px}
-.item{background:#f3f4f6;border-radius:10px;padding:14px;margin-bottom:10px}
-.item b{color:#4f46e5;font-size:13px}
+.item{background:#262626;border-radius:10px;padding:14px;margin-bottom:10px;border-left:3px solid #818cf8}
 </style>
 </head>
 <body>
-<h1>Tool Đổi Tone Câu</h1>
-<p class="sub">Nhập câu gốc → chọn tone → AI viết lại cho mượt</p>
-
 <div class="card">
-<label>Câu gốc của bạn</label>
-<input id="text" placeholder="VD: thằng kia gửi báo cáo tao chưa đm"/>
+<h1>PSC Reply Bot</h1>
+<p class="sub">Dùng AI để rep comment chất như nước cất</p>
 
-<label>Chọn tone</label>
-<select id="tone">
-<option>Lịch sự</option>
-<option>Thân thiện</option>
-<option>Chuyên nghiệp</option>
-<option>Ngắn gọn</option>
-</select>
+<label>Bình luận cần rep:</label>
+<textarea id="text" placeholder="nộp báo cáo chưa thằng kia"></textarea>
 
-<button onclick="fix()">Tạo 3 phiên bản</button>
+<label>Chọn tone:</label>
+<div class="tone-wrap">
+<button class="tone-btn active" data-tone="Thân thiện">Thân thiện</button>
+<button class="tone-btn" data-tone="Hài hước">Hài hước</button>
+<button class="tone-btn" data-tone="Chuyên nghiệp">Chuyên nghiệp</button>
+<button class="tone-btn" data-tone="Cà khịa">Cà khịa</button>
+</div>
+
+<button onclick="fix()">Tạo câu trả lời</button>
 <div id="out"></div>
 </div>
 
 <script>
+let currentTone='Thân thiện';
+document.querySelectorAll('.tone-btn').forEach(btn=>{
+  btn.onclick=()=>{
+    document.querySelectorAll('.tone-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    currentTone=btn.dataset.tone;
+  }
+})
+
 async function fix(){
   const text=document.getElementById('text').value;
-  const tone=document.getElementById('tone').value;
   const out=document.getElementById('out');
   out.innerHTML='Đang viết lại...';
   
-  const r=await fetch('/api/fix',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text,tone})});
+  const r=await fetch('/api/fix',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text,tone:currentTone})});
   const j=await r.json();
   
-  if(j.error){out.innerHTML='<b style="color:red">'+j.error+'</b>';return}
+  if(j.error){out.innerHTML='<b style="color:#ef4444">'+j.error+'</b>';return}
   out.innerHTML=j.versions.map((v,i)=>`<div class="item"><b>Phiên bản ${i+1}</b><br>${v}</div>`).join('');
 }
 </script>
